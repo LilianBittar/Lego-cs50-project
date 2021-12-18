@@ -6,8 +6,6 @@ from pybricks.ev3devices import Motor, TouchSensor, InfraredSensor
 from pybricks.media.ev3dev import SoundFile
 from pybricks.parameters import Button, Direction, Port, Stop
 
-from threading import Thread
-
 class Snake:
 
     def __init__(self, ir_sensor_port: Port, ir_beacon_channel: int, driving_motor_port: Port, steering_motor_port: Port, striking_motor_port: Port):
