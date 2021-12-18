@@ -50,7 +50,7 @@ class Snake:
         queue = []
 
         print("gg")
-        for i in range(10):
+        for i in range(5):
             queue.append(self.ir_sensor.distance())
         
         while True:
@@ -109,34 +109,19 @@ class ManualState:
 
 class AutonomousState:
     def run(self, snake: Snake):
-        queue = []
+        self.driving_motor.run(500)
 
-        for i in range(10):
-            queue.append(snake.ir_sensor.distance())
-        
-        last = snake.ir_sensor.distance()
         while True:
-
-            wait(200)
-            dist = snake.ir_sensor.distance()
-
-            avg = 0
-            for value in queue:
-                avg += value
-            avg /= len(queue)
-
-            print(avg - dist)
-
-            if avg - dist > 25:
-                snake.hiss()
-                snake.strike()
-                queue.clear()
-                for i in range(10):
-                    queue.append(snake.ir_sensor.distance())
-            else:
-                queue.pop(0)
-                queue.append(value)
-
+            if snake.ir_sensor.distance() <= 50:
+                snake.steering_motor.run_until_stalled(-200, then=Stop.HOLD)
+                left_distance = snake.ir_sensor.distance()    
+                snake.steering_motor.run_until_stalled(200, then=Stop.HOLD)
+                right_distance = snake.ir_sensor.distance()
+                if left_distance < right_distance:
+                    snake.driving_motor.run(1000)
+                else:
+                    snake.steering_motor.run_until_stalled(-200, then=Stop.HOLD)
+                    snake.driving_motor.run(1000)   
 
 snake = Snake(Port.S4, 1, Port.A, Port.C, Port.B)
 snake.run()
