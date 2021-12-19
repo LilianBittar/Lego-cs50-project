@@ -1,10 +1,13 @@
 #!/usr/bin/env pybricks-micropython
-
-from pybricks.tools import wait
 from pybricks.hubs import EV3Brick
-from pybricks.ev3devices import Motor, TouchSensor, InfraredSensor
-from pybricks.media.ev3dev import SoundFile
-from pybricks.parameters import Button, Direction, Port, Stop
+from pybricks.ev3devices import (Motor, TouchSensor, ColorSensor,
+                                 InfraredSensor, UltrasonicSensor, GyroSensor)
+from pybricks.parameters import Port, Stop, Direction, Button, Color
+from pybricks.tools import wait, StopWatch, DataLog
+from pybricks.robotics import DriveBase
+from pybricks.media.ev3dev import SoundFile, ImageFile
+
+from threading import Thread
 
 class Snake:
 
@@ -17,6 +20,8 @@ class Snake:
         self.striking_motor = Motor(striking_motor_port, Direction.CLOCKWISE)
 
         self.behaviour_state = AutonomousState()
+
+        self.to_wiggle = True
 
         self.left_end = self.steering_motor.run_until_stalled(-200, then=Stop.HOLD)
         self.right_end = self.steering_motor.run_until_stalled(200, then=Stop.HOLD)
@@ -38,11 +43,17 @@ class Snake:
     def hiss(self):
         self.ev3_brick.speaker.play_file(file=SoundFile.SNAKE_HISS)
 
-
     def strike(self):
         self.striking_motor.run_time(220, 1100)
         self.striking_motor.run_time(-220, 1100)
 
+    def wiggle_behaviour(self):
+        while True:
+            if self.to_wiggle:
+                self.steering_motor.run_until_stalled(-200, then=Stop.HOLD)
+                wait(1000)
+                self.steering_motor.run_until_stalled(200, then=Stop.HOLD)
+                wait(1000)
 
     def bitting_action_behaviour(self):
         queue = []
@@ -107,19 +118,23 @@ class ManualState:
 
 class AutonomousState:
     def run(self, snake: Snake):
-        self.driving_motor.run(500)
-
+        snake.driving_motor.run(500)
         while True:
             if snake.ir_sensor.distance() <= 50:
+                snake.to_wiggle = False
                 snake.steering_motor.run_until_stalled(-200, then=Stop.HOLD)
                 left_distance = snake.ir_sensor.distance()    
                 snake.steering_motor.run_until_stalled(200, then=Stop.HOLD)
                 right_distance = snake.ir_sensor.distance()
                 if left_distance < right_distance:
-                    snake.driving_motor.run(1000)
+                    snake.driving_motor.run(500)
                 else:
                     snake.steering_motor.run_until_stalled(-200, then=Stop.HOLD)
-                    snake.driving_motor.run(1000)   
-
+                    snake.driving_motor.run(500)   
+                snake.to_wiggle = True
+                
+                
 snake = Snake(Port.S4, 1, Port.A, Port.C, Port.B)
+t = Thread(target=snake.wiggle_behaviour)
+t.start()
 snake.run()
