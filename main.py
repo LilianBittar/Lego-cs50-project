@@ -35,29 +35,34 @@ class Snake:
         self.steering_motor.run_target(speed=200, target_angle=0, then=Stop.COAST)
 
         self.striking_motor.run_time(-220, 1100)
-
-
-    def set_manual_behaviour(self):
-        self.is_auto_moving = False
-        self.is_auto_wiggling = False
-        self.is_auto_bitting = False
-        self.behaviour_state = ManualState()
-        print("Switched to manual mode.")
-        wait(100)
-
-
-    def set_autonomous_behaviour(self):
-        self.behaviour_state = AutonomousState()
-        self.is_auto_moving = True
-        self.is_auto_wiggling = False
-        self.is_auto_bitting = True
-        print("Switched to automatic mode.")
-        wait(100)
     
 
     def run(self):
+        self.switch_behaviour()
         self.behaviour_state.run(self)
-        
+
+
+    def switch_behaviour(self):
+            wait(500)
+            ir_beacons_pressed = set(self.ir_sensor.buttons(2))
+            if ir_beacons_pressed == {Button.LEFT_UP}:
+                if isinstance(self.behaviour_state, AutonomousState):
+                    self.moving_direction = 0
+                    self.is_auto_moving = False
+                    self.is_auto_wiggling = False
+                    self.is_auto_bitting = False
+                    self.behaviour_state = ManualState()
+                    print("Switched to manual mode.")
+                else:
+                    self.behaviour_state = AutonomousState()
+                    self.is_auto_moving = True
+                    self.is_auto_wiggling = False
+                    self.is_auto_bitting = True
+                    print("Switched to automatic mode.")
+            elif ir_beacons_pressed == {Button.RIGHT_UP}:
+                self.hiss()
+                self.strike()
+
 
     def hiss(self):
         self.ev3_brick.speaker.play_file(file=SoundFile.SNAKE_HISS)
@@ -92,11 +97,11 @@ class Snake:
     def bitting_action_behaviour(self):
         queue = []
 
-        for i in range(5):
-            queue.append(self.ir_sensor.distance())
+        # for i in range(5):
+        #     queue.append(self.ir_sensor.distance())
         
         while True:
-            dist = self.ir_sensor.distance()
+            dist = 0
             avg = 0
             for value in queue:
                 avg += value
@@ -111,7 +116,6 @@ class Snake:
                 queue.pop(0)
                 queue.append(value)
              
-            
 
 class ManualState:
     def run(self, snake: Snake):
@@ -138,9 +142,6 @@ class ManualState:
             elif ir_beacons_pressed == {Button.RIGHT_DOWN}:
                 snake.steering_motor.run(500)
                 snake.driving_motor.run(-1000)
-            
-            elif ir_beacons_pressed == {Button.BEACON}:
-                snake.set_autonomous_behaviour()
 
             else:
                 snake.steering_motor.hold()
@@ -151,13 +152,8 @@ class AutonomousState:
     def run(self, snake: Snake):
 
         snake.moving_direction = 1
-        ir_beacons_pressed = set(snake.ir_sensor.buttons(snake.ir_beacon_channel))
-        if ir_beacons_pressed == {Button.BEACON}:
-            snake.moving_direction = 0
-            snake.set_manual_behaviour()
                
-
-        wait(1000)
+        wait(500)
         if snake.ir_sensor.distance() <= 50:
             snake.moving_direction = 0
             snake.is_auto_wiggling = False
@@ -167,7 +163,7 @@ class AutonomousState:
             right_distance = snake.ir_sensor.distance()
             if right_distance < 40 and left_distance < 40:
                 snake.moving_direction = -1
-                wait(3000)
+                wait(5000)
                 snake.moving_direction = 0
             if left_distance > right_distance:
                 snake.steering_motor.run_until_stalled(-200, then=Stop.HOLD)
@@ -177,6 +173,6 @@ class AutonomousState:
                 
                 
 snake = Snake(Port.S4, 1, Port.A, Port.C, Port.B)
-snake.set_autonomous_behaviour()
+snake.behaviour_state = AutonomousState()
 while True:
     snake.run()
