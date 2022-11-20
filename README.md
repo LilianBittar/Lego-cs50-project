@@ -8,12 +8,12 @@ A python program that runs on Lego mindstorm and mimics a real life behavior of 
 
 # Architecture preview:
 <p align="center">
-    <img src="assets/architecture.png" alt="Preview" >
+    <img src="assets/architecture.png" alt="Preview" width="250" height="75" >
 </p>
 
 # Project preview: 
 <p align="center">
-    <img src="assets/snake.png" alt="Preview" >
+    <img src="assets/snake.png" alt="Preview" width="250" height="250" >
 </p>
 
 
